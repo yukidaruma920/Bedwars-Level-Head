@@ -28,4 +28,12 @@ public class LevelHeadConfig {
             config.save();
         }
     }
+
+    public static void saveConfig() {
+        config.get("general", "showOwnLevel", true).set(showOwnLevel);
+        config.get("general", "adjustOwnLevel", false).set(adjustOwnLevel);
+        config.get("general", "prestigeFormat", true).set(prestigeFormat);
+        config.get("general", "apiKey", "").set(apiKey);
+        config.save();
+    }
 }
