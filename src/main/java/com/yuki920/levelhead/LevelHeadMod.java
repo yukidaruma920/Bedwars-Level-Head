@@ -1,4 +1,4 @@
-package com.jules.levelhead;
+package com.yuki920.levelhead;
 
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;

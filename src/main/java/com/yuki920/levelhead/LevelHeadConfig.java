@@ -1,4 +1,4 @@
-package com.jules.levelhead;
+package com.yuki920.levelhead;
 
 import net.minecraftforge.common.config.Configuration;
 
