@@ -20,6 +20,7 @@ public class LevelHeadCommand extends CommandBase {
 
     @Override
     public void processCommand(ICommandSender sender, String[] args) throws CommandException {
+        LevelHeadMod.logger.info("LevelHead command executed");
         Minecraft.getMinecraft().addScheduledTask(() -> {
             Minecraft.getMinecraft().displayGuiScreen(new ConfigGui(null));
         });

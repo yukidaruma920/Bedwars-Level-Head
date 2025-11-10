@@ -39,10 +39,13 @@ public class RenderHandler {
             if (level != null) {
                 renderLevel(player, level, event.x, event.y, event.z);
             }
+        } else {
+            LevelHeadMod.logger.warn("API key is not set!");
         }
     }
 
     private void renderLevel(EntityPlayer player, String level, double x, double y, double z) {
+        String displayText = EnumChatFormatting.AQUA + "Bedwars Level: " + level;
         EntityPlayerSP localPlayer = mc.thePlayer;
         if (player.equals(localPlayer) && !LevelHeadConfig.showOwnLevel) {
             return;
@@ -73,7 +76,7 @@ public class RenderHandler {
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer worldrenderer = tessellator.getWorldRenderer();
 
-        int stringWidth = fontRenderer.getStringWidth(level) / 2;
+        int stringWidth = fontRenderer.getStringWidth(displayText) / 2;
 
         GlStateManager.disableTexture2D();
         worldrenderer.begin(7, worldrenderer.getVertexFormat());
@@ -84,7 +87,7 @@ public class RenderHandler {
         tessellator.draw();
         GlStateManager.enableTexture2D();
 
-        fontRenderer.drawString(level, -fontRenderer.getStringWidth(level) / 2, 0, 0xFFFFFFFF);
+        fontRenderer.drawString(displayText, -fontRenderer.getStringWidth(displayText) / 2, 0, 0xFFFFFFFF);
         GlStateManager.depthMask(true);
         GlStateManager.enableDepth();
         GlStateManager.enableLighting();
@@ -106,6 +109,7 @@ public class RenderHandler {
 
         levelCache.put(player.getUniqueID(), "..."); // Placeholder
         lastRequestTimes.put(playerUUID, currentTime);
+        LevelHeadMod.logger.info("Requesting Bedwars level for " + player.getName());
 
         HypixelAPI.getPlayerData(player.getUniqueID()).thenAccept(data -> {
             if (data != null) {
