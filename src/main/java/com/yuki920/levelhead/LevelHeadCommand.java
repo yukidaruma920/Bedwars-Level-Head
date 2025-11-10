@@ -21,7 +21,7 @@ public class LevelHeadCommand extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args) throws CommandException {
         Minecraft.getMinecraft().addScheduledTask(() -> {
-            Minecraft.getMinecraft().displayGuiScreen(new ConfigGui());
+            Minecraft.getMinecraft().displayGuiScreen(new ConfigGui(null));
         });
     }
 
