@@ -5,11 +5,13 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.client.ClientCommandHandler;
 
-@Mod(modid = LevelHeadMod.MODID, version = LevelHeadMod.VERSION)
+@Mod(modid = LevelHeadMod.MODID, version = LevelHeadMod.VERSION, guiFactory = "com.yuki920.levelhead.LevelHeadGuiFactory")
 public class LevelHeadMod
 {
     public static final String MODID = "levelhead";
@@ -24,14 +26,7 @@ public class LevelHeadMod
     public void init(FMLInitializationEvent event)
     {
         new RenderHandler();
-        Keybindings.init();
         MinecraftForge.EVENT_BUS.register(this);
-    }
-
-    @SubscribeEvent
-    public void onKeyInput(InputEvent.KeyInputEvent event) {
-        if (Keybindings.openConfigGui.isPressed()) {
-            Minecraft.getMinecraft().displayGuiScreen(new ConfigGui());
-        }
+        ClientCommandHandler.instance.registerCommand(new LevelHeadCommand());
     }
 }

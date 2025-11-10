@@ -24,6 +24,8 @@ public class RenderHandler {
     private final RenderManager renderManager = mc.getRenderManager();
     private final FontRenderer fontRenderer = mc.fontRendererObj;
     private final Map<UUID, String> levelCache = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastRequestTimes = new ConcurrentHashMap<>();
+
 
     public RenderHandler() {
         MinecraftForge.EVENT_BUS.register(this);
@@ -31,7 +33,7 @@ public class RenderHandler {
 
     @SubscribeEvent
     public void onRenderPlayer(RenderPlayerEvent.Specials.Post event) {
-        if (isHypixel() && !LevelHeadConfig.apiKey.isEmpty()) {
+        if (!LevelHeadConfig.apiKey.isEmpty()) {
             EntityPlayer player = event.entityPlayer;
             String level = getBedwarsLevel(player);
             if (level != null) {
@@ -91,16 +93,20 @@ public class RenderHandler {
         GlStateManager.popMatrix();
     }
 
-    private boolean isHypixel() {
-        return !mc.isSingleplayer() && mc.getCurrentServerData() != null && mc.getCurrentServerData().serverIP.toLowerCase().contains("hypixel.net");
-    }
-
     private String getBedwarsLevel(EntityPlayer player) {
-        if (levelCache.containsKey(player.getUniqueID())) {
-            return levelCache.get(player.getUniqueID());
+        UUID playerUUID = player.getUniqueID();
+        if (levelCache.containsKey(playerUUID)) {
+            return levelCache.get(playerUUID);
+        }
+
+        long currentTime = System.currentTimeMillis();
+        if (lastRequestTimes.containsKey(playerUUID) && (currentTime - lastRequestTimes.get(playerUUID) < 600000)) { // 10 minutes
+            return null; // Don't request again for a while
         }
 
         levelCache.put(player.getUniqueID(), "..."); // Placeholder
+        lastRequestTimes.put(playerUUID, currentTime);
+
         HypixelAPI.getPlayerData(player.getUniqueID()).thenAccept(data -> {
             if (data != null) {
                 int level = data.getBedwarsLevel();
