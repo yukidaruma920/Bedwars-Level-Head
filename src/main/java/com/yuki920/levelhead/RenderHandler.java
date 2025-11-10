@@ -100,6 +100,7 @@ public class RenderHandler {
             return levelCache.get(player.getUniqueID());
         }
 
+        levelCache.put(player.getUniqueID(), "..."); // Placeholder
         HypixelAPI.getPlayerData(player.getUniqueID()).thenAccept(data -> {
             if (data != null) {
                 int level = data.getBedwarsLevel();
@@ -111,9 +112,14 @@ public class RenderHandler {
                         formattedLevel = String.valueOf(level);
                     }
                     levelCache.put(player.getUniqueID(), formattedLevel);
+                } else {
+                    levelCache.put(player.getUniqueID(), EnumChatFormatting.RED + "N/A");
                 }
+            } else {
+                levelCache.put(player.getUniqueID(), EnumChatFormatting.RED + "Error");
             }
         });
-        return null;
+
+        return levelCache.get(player.getUniqueID());
     }
 }
