@@ -1,0 +1,16 @@
+[
+{
+  "modid": "levelhead",
+  "name": "Bedwars Level Head",
+  "description": "Displays Bedwars levels above players' heads.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Jules, yuki920"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
