@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class HypixelAPI {
@@ -16,31 +17,33 @@ public class HypixelAPI {
     private static final Map<UUID, PlayerData> playerDataCache = new ConcurrentHashMap<>();
     private static final Gson gson = new Gson();
 
-    public static PlayerData getPlayerData(UUID uuid) {
+    public static CompletableFuture<PlayerData> getPlayerData(UUID uuid) {
         if (playerDataCache.containsKey(uuid)) {
             PlayerData data = playerDataCache.get(uuid);
             if (System.currentTimeMillis() - data.getTimestamp() < 600000) { // 10 minute cache
-                return data;
+                return CompletableFuture.completedFuture(data);
             }
         }
 
-        try {
-            URL url = new URL(String.format(API_URL, LevelHeadConfig.apiKey, uuid.toString()));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            InputStreamReader reader = new InputStreamReader(connection.getInputStream());
-            JsonObject json = gson.fromJson(reader, JsonObject.class);
-            reader.close();
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                URL url = new URL(String.format(API_URL, LevelHeadConfig.apiKey, uuid.toString()));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                InputStreamReader reader = new InputStreamReader(connection.getInputStream());
+                JsonObject json = gson.fromJson(reader, JsonObject.class);
+                reader.close();
 
-            if (json.has("player")) {
-                PlayerData data = new PlayerData(json.getAsJsonObject("player"));
-                playerDataCache.put(uuid, data);
-                return data;
+                if (json.has("player")) {
+                    PlayerData data = new PlayerData(json.getAsJsonObject("player"));
+                    playerDataCache.put(uuid, data);
+                    return data;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+            return null;
+        });
     }
 
     public static class PlayerData {

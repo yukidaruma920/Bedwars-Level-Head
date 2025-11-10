@@ -14,11 +14,16 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class RenderHandler {
 
     private final Minecraft mc = Minecraft.getMinecraft();
     private final RenderManager renderManager = mc.getRenderManager();
     private final FontRenderer fontRenderer = mc.fontRendererObj;
+    private final Map<UUID, String> levelCache = new ConcurrentHashMap<>();
 
     public RenderHandler() {
         MinecraftForge.EVENT_BUS.register(this);
@@ -91,58 +96,24 @@ public class RenderHandler {
     }
 
     private String getBedwarsLevel(EntityPlayer player) {
-        HypixelAPI.PlayerData data = HypixelAPI.getPlayerData(player.getUniqueID());
-        if (data != null) {
-            int level = data.getBedwarsLevel();
-            if (level > 0) {
-                if (LevelHeadConfig.prestigeFormat) {
-                    return getPrestigeFormat(level);
-                } else {
-                    return String.valueOf(level);
+        if (levelCache.containsKey(player.getUniqueID())) {
+            return levelCache.get(player.getUniqueID());
+        }
+
+        HypixelAPI.getPlayerData(player.getUniqueID()).thenAccept(data -> {
+            if (data != null) {
+                int level = data.getBedwarsLevel();
+                if (level > 0) {
+                    String formattedLevel;
+                    if (LevelHeadConfig.prestigeFormat) {
+                        formattedLevel = PrestigeFormatter.formatPrestige(level);
+                    } else {
+                        formattedLevel = String.valueOf(level);
+                    }
+                    levelCache.put(player.getUniqueID(), formattedLevel);
                 }
             }
-        }
+        });
         return null;
-    }
-
-    private String getPrestigeFormat(int level) {
-        int prestige = level / 100;
-        EnumChatFormatting color;
-        switch (prestige) {
-            case 0:
-                color = EnumChatFormatting.GRAY;
-                break;
-            case 1:
-                color = EnumChatFormatting.WHITE;
-                break;
-            case 2:
-                color = EnumChatFormatting.GOLD;
-                break;
-            case 3:
-                color = EnumChatFormatting.AQUA;
-                break;
-            case 4:
-                color = EnumChatFormatting.DARK_GREEN;
-                break;
-            case 5:
-                color = EnumChatFormatting.DARK_AQUA;
-                break;
-            case 6:
-                color = EnumChatFormatting.DARK_RED;
-                break;
-            case 7:
-                color = EnumChatFormatting.LIGHT_PURPLE;
-                break;
-            case 8:
-                color = EnumChatFormatting.BLUE;
-                break;
-            case 9:
-                color = EnumChatFormatting.DARK_PURPLE;
-                break;
-            default:
-                color = EnumChatFormatting.RED;
-                break;
-        }
-        return color + "[" + level + "✫]";
     }
 }
