@@ -24,6 +24,8 @@ public class RenderHandler {
     private final RenderManager renderManager = mc.getRenderManager();
     private final FontRenderer fontRenderer = mc.fontRendererObj;
     private final Map<UUID, String> levelCache = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastRequestTimes = new ConcurrentHashMap<>();
+
 
     public RenderHandler() {
         MinecraftForge.EVENT_BUS.register(this);
@@ -31,16 +33,19 @@ public class RenderHandler {
 
     @SubscribeEvent
     public void onRenderPlayer(RenderPlayerEvent.Specials.Post event) {
-        if (isHypixel() && !LevelHeadConfig.apiKey.isEmpty()) {
+        if (!LevelHeadConfig.apiKey.isEmpty()) {
             EntityPlayer player = event.entityPlayer;
             String level = getBedwarsLevel(player);
             if (level != null) {
                 renderLevel(player, level, event.x, event.y, event.z);
             }
+        } else {
+            LevelHeadMod.logger.warn("API key is not set!");
         }
     }
 
     private void renderLevel(EntityPlayer player, String level, double x, double y, double z) {
+        String displayText = EnumChatFormatting.AQUA + "Bedwars Level: " + level;
         EntityPlayerSP localPlayer = mc.thePlayer;
         if (player.equals(localPlayer) && !LevelHeadConfig.showOwnLevel) {
             return;
@@ -71,7 +76,7 @@ public class RenderHandler {
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer worldrenderer = tessellator.getWorldRenderer();
 
-        int stringWidth = fontRenderer.getStringWidth(level) / 2;
+        int stringWidth = fontRenderer.getStringWidth(displayText) / 2;
 
         GlStateManager.disableTexture2D();
         worldrenderer.begin(7, worldrenderer.getVertexFormat());
@@ -82,7 +87,7 @@ public class RenderHandler {
         tessellator.draw();
         GlStateManager.enableTexture2D();
 
-        fontRenderer.drawString(level, -fontRenderer.getStringWidth(level) / 2, 0, 0xFFFFFFFF);
+        fontRenderer.drawString(displayText, -fontRenderer.getStringWidth(displayText) / 2, 0, 0xFFFFFFFF);
         GlStateManager.depthMask(true);
         GlStateManager.enableDepth();
         GlStateManager.enableLighting();
@@ -91,16 +96,21 @@ public class RenderHandler {
         GlStateManager.popMatrix();
     }
 
-    private boolean isHypixel() {
-        return !mc.isSingleplayer() && mc.getCurrentServerData() != null && mc.getCurrentServerData().serverIP.toLowerCase().contains("hypixel.net");
-    }
-
     private String getBedwarsLevel(EntityPlayer player) {
-        if (levelCache.containsKey(player.getUniqueID())) {
-            return levelCache.get(player.getUniqueID());
+        UUID playerUUID = player.getUniqueID();
+        if (levelCache.containsKey(playerUUID)) {
+            return levelCache.get(playerUUID);
+        }
+
+        long currentTime = System.currentTimeMillis();
+        if (lastRequestTimes.containsKey(playerUUID) && (currentTime - lastRequestTimes.get(playerUUID) < 600000)) { // 10 minutes
+            return null; // Don't request again for a while
         }
 
         levelCache.put(player.getUniqueID(), "..."); // Placeholder
+        lastRequestTimes.put(playerUUID, currentTime);
+        LevelHeadMod.logger.info("Requesting Bedwars level for " + player.getName());
+
         HypixelAPI.getPlayerData(player.getUniqueID()).thenAccept(data -> {
             if (data != null) {
                 int level = data.getBedwarsLevel();

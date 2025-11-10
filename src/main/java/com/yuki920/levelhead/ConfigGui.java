@@ -10,6 +10,11 @@ import java.io.IOException;
 public class ConfigGui extends GuiScreen {
 
     private GuiTextField apiKeyField;
+    private GuiScreen parentScreen;
+
+    public ConfigGui(GuiScreen parentScreen) {
+        this.parentScreen = parentScreen;
+    }
 
     @Override
     public void initGui() {
@@ -38,7 +43,7 @@ public class ConfigGui extends GuiScreen {
                 button.displayString = "Prestige Format: " + (LevelHeadConfig.prestigeFormat ? EnumChatFormatting.GREEN + "ON" : EnumChatFormatting.RED + "OFF");
                 break;
             case 4:
-                this.mc.displayGuiScreen(null);
+                this.mc.displayGuiScreen(this.parentScreen);
                 break;
         }
     }
