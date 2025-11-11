@@ -103,56 +103,8 @@ public class RenderHandler {
     }
 
     private String getBedwarsLevel(EntityPlayer player) {
-        UUID playerUUID = player.getUniqueID();
-        
-        // キャッシュがあればそれを返す
-        if (levelCache.containsKey(playerUUID)) {
-            return levelCache.get(playerUUID);
-        }
-
-        // APIキーが設定されていない場合は "?" を返す
-        if (LevelHeadConfig.apiKey == null || LevelHeadConfig.apiKey.isEmpty()) {
-            levelCache.put(playerUUID, "?");
-            return "?";
-        }
-
-        long currentTime = System.currentTimeMillis();
-        if (lastRequestTimes.containsKey(playerUUID) && (currentTime - lastRequestTimes.get(playerUUID) < 600000)) {
-            // リクエスト間隔が短い場合はキャッシュの値を返す（存在しない場合は "?"）
-            return levelCache.getOrDefault(playerUUID, "?");
-        }
-
-        // ローディング中の表示
-        levelCache.put(playerUUID, "...");
-        lastRequestTimes.put(playerUUID, currentTime);
-        LevelHeadMod.logger.info("Requesting Bedwars level for " + player.getName() + " (UUID: " + playerUUID + ")");
-
-        HypixelAPI.getPlayerData(playerUUID).thenAccept(data -> {
-            if (data != null) {
-                int level = data.getBedwarsLevel();
-                LevelHeadMod.logger.info("Received level " + level + " for " + player.getName());
-                if (level > 0) {
-                    String formattedLevel;
-                    if (LevelHeadConfig.prestigeFormat) {
-                        formattedLevel = PrestigeFormatter.formatPrestige(level);
-                    } else {
-                        formattedLevel = String.valueOf(level);
-                    }
-                    levelCache.put(playerUUID, formattedLevel);
-                } else {
-                    levelCache.put(playerUUID, "?");
-                }
-            } else {
-                LevelHeadMod.logger.error("Failed to get data for " + player.getName());
-                levelCache.put(playerUUID, "?");
-            }
-        }).exceptionally(throwable -> {
-            LevelHeadMod.logger.error("Exception while fetching data for " + player.getName(), throwable);
-            levelCache.put(playerUUID, "?");
-            return null;
-        });
-
-        return levelCache.get(playerUUID);
+        // For debugging: always return a fixed level string.
+        return PrestigeFormatter.formatPrestige(1);
     }
     
     // キャッシュをクリアするメソッド
