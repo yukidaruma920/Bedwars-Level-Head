@@ -45,14 +45,21 @@ public class LevelHeadCommand extends CommandBase {
                 LevelHeadMod.logger.info("Opening LevelHead config GUI");
                 sender.addChatMessage(new ChatComponentText(EnumChatFormatting.GREEN + "Opening LevelHead config..."));
                 final Minecraft mc = Minecraft.getMinecraft();
-                // まずテストGUIで試す
                 mc.addScheduledTask(new Runnable() {
                     @Override
                     public void run() {
                         try {
                             LevelHeadMod.logger.info("Attempting to open GUI...");
-                            mc.displayGuiScreen(new SimpleTestGui(null));
-                            LevelHeadMod.logger.info("GUI open command executed");
+                            // チャット画面を明示的に閉じる
+                            mc.displayGuiScreen(null);
+                            // 次のティックでConfigGUIを開く
+                            mc.addScheduledTask(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mc.displayGuiScreen(new ConfigGui(null));
+                                    LevelHeadMod.logger.info("ConfigGui should now be visible");
+                                }
+                            });
                         } catch (Exception e) {
                             LevelHeadMod.logger.error("Failed to open GUI", e);
                         }
