@@ -44,8 +44,12 @@ public class LevelHeadCommand extends CommandBase {
             case "cfg":
                 LevelHeadMod.logger.info("Opening LevelHead config GUI");
                 sender.addChatMessage(new ChatComponentText(EnumChatFormatting.GREEN + "Opening LevelHead config..."));
-                Minecraft.getMinecraft().addScheduledTask(() -> {
-                    Minecraft.getMinecraft().displayGuiScreen(new ConfigGui(Minecraft.getMinecraft().currentScreen));
+                Minecraft mc = Minecraft.getMinecraft();
+                mc.addScheduledTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        mc.displayGuiScreen(new ConfigGui(mc.currentScreen));
+                    }
                 });
                 break;
                 

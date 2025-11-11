@@ -14,10 +14,13 @@ public class ConfigGui extends GuiScreen {
 
     public ConfigGui(GuiScreen parentScreen) {
         this.parentScreen = parentScreen;
+        LevelHeadMod.logger.info("ConfigGui constructor called with parent: " + (parentScreen != null ? parentScreen.getClass().getSimpleName() : "null"));
     }
 
     @Override
     public void initGui() {
+        LevelHeadMod.logger.info("ConfigGui initGui called");
+        this.buttonList.clear();
         this.buttonList.add(new GuiButton(0, this.width / 2 - 100, this.height / 2 - 48, "Show Own Level: " + (LevelHeadConfig.showOwnLevel ? EnumChatFormatting.GREEN + "ON" : EnumChatFormatting.RED + "OFF")));
         this.buttonList.add(new GuiButton(1, this.width / 2 - 100, this.height / 2 - 24, "Adjust Own Level: " + (LevelHeadConfig.adjustOwnLevel ? EnumChatFormatting.GREEN + "ON" : EnumChatFormatting.RED + "OFF")));
         this.buttonList.add(new GuiButton(2, this.width / 2 - 100, this.height / 2, "Prestige Format: " + (LevelHeadConfig.prestigeFormat ? EnumChatFormatting.GREEN + "ON" : EnumChatFormatting.RED + "OFF")));
@@ -25,10 +28,12 @@ public class ConfigGui extends GuiScreen {
         this.apiKeyField.setMaxStringLength(36);
         this.apiKeyField.setText(LevelHeadConfig.apiKey);
         this.buttonList.add(new GuiButton(4, this.width / 2 - 100, this.height / 2 + 48, "Done"));
+        LevelHeadMod.logger.info("ConfigGui initialized with " + this.buttonList.size() + " buttons");
     }
 
     @Override
     protected void actionPerformed(GuiButton button) throws IOException {
+        LevelHeadMod.logger.info("Button clicked: " + button.id);
         switch (button.id) {
             case 0:
                 LevelHeadConfig.showOwnLevel = !LevelHeadConfig.showOwnLevel;
@@ -43,6 +48,7 @@ public class ConfigGui extends GuiScreen {
                 button.displayString = "Prestige Format: " + (LevelHeadConfig.prestigeFormat ? EnumChatFormatting.GREEN + "ON" : EnumChatFormatting.RED + "OFF");
                 break;
             case 4:
+                LevelHeadMod.logger.info("Closing ConfigGui, returning to parent");
                 this.mc.displayGuiScreen(this.parentScreen);
                 break;
         }
@@ -71,7 +77,13 @@ public class ConfigGui extends GuiScreen {
 
     @Override
     public void onGuiClosed() {
+        LevelHeadMod.logger.info("ConfigGui onGuiClosed called");
         LevelHeadConfig.apiKey = this.apiKeyField.getText();
         LevelHeadConfig.saveConfig();
+    }
+    
+    @Override
+    public boolean doesGuiPauseGame() {
+        return false;
     }
 }
