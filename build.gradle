@@ -21,11 +21,13 @@ plugins {
 }
 */
 version = "1.7.1"
-group= "com.yuki920.levelhead" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "BedwarsLevelHead-Forge"
+group= "com.yuki920" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "levelhead" // Keep this simple for maven publishing, etc.
 
 jar {
-	archiveFileName = "BedwarsLevelHead-${version}+1.8.9.jar"
+    doFirst {
+        archiveName = "BedwarsLevelHead-Forge-${version}+1.8.9.jar"
+    }
 }
 
 sourceCompatibility = 1.8
