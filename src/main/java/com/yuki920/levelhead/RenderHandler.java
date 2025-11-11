@@ -21,39 +21,37 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RenderHandler {
 
     private final Minecraft mc = Minecraft.getMinecraft();
-    private final RenderManager renderManager = mc.getRenderManager();
-    private final FontRenderer fontRenderer = mc.fontRendererObj;
     private final Map<UUID, String> levelCache = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastRequestTimes = new ConcurrentHashMap<>();
 
-
     public RenderHandler() {
         MinecraftForge.EVENT_BUS.register(this);
+        LevelHeadMod.logger.info("RenderHandler registered to EVENT_BUS");
     }
 
     @SubscribeEvent
     public void onRenderPlayer(RenderPlayerEvent.Specials.Post event) {
-        if (!LevelHeadConfig.apiKey.isEmpty()) {
-            EntityPlayer player = event.entityPlayer;
-            String level = getBedwarsLevel(player);
-            if (level != null) {
-                renderLevel(player, level, event.x, event.y, event.z);
-            }
-        } else {
-            LevelHeadMod.logger.warn("API key is not set!");
-        }
+        EntityPlayer player = event.entityPlayer;
+        
+        // 常にレベルを取得して表示
+        String level = getBedwarsLevel(player);
+        renderLevel(player, level, event.x, event.y, event.z);
     }
 
     private void renderLevel(EntityPlayer player, String level, double x, double y, double z) {
-        String displayText = EnumChatFormatting.AQUA + "Bedwars Level: " + level;
         EntityPlayerSP localPlayer = mc.thePlayer;
+        
+        if (localPlayer == null) {
+            return;
+        }
+        
         if (player.equals(localPlayer) && !LevelHeadConfig.showOwnLevel) {
             return;
         }
 
         float yOffset = 0.5F;
         if (player.equals(localPlayer) && LevelHeadConfig.adjustOwnLevel) {
-            yOffset += 0.5F; // Adjust this value as needed
+            yOffset += 0.5F;
         }
 
         float distance = localPlayer.getDistanceToEntity(player);
@@ -61,6 +59,12 @@ public class RenderHandler {
             return;
         }
 
+        RenderManager renderManager = mc.getRenderManager();
+        FontRenderer fontRenderer = mc.fontRendererObj;
+        
+        // 表示テキストを作成
+        String displayText = EnumChatFormatting.AQUA + "Bedwars Level: " + EnumChatFormatting.YELLOW + level;
+        
         float scale = 0.02666667F;
         GlStateManager.pushMatrix();
         GlStateManager.translate((float) x, (float) y + player.height + yOffset, (float) z);
@@ -73,6 +77,7 @@ public class RenderHandler {
         GlStateManager.disableDepth();
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer worldrenderer = tessellator.getWorldRenderer();
 
@@ -88,6 +93,7 @@ public class RenderHandler {
         GlStateManager.enableTexture2D();
 
         fontRenderer.drawString(displayText, -fontRenderer.getStringWidth(displayText) / 2, 0, 0xFFFFFFFF);
+        
         GlStateManager.depthMask(true);
         GlStateManager.enableDepth();
         GlStateManager.enableLighting();
@@ -98,22 +104,33 @@ public class RenderHandler {
 
     private String getBedwarsLevel(EntityPlayer player) {
         UUID playerUUID = player.getUniqueID();
+        
+        // キャッシュがあればそれを返す
         if (levelCache.containsKey(playerUUID)) {
             return levelCache.get(playerUUID);
         }
 
-        long currentTime = System.currentTimeMillis();
-        if (lastRequestTimes.containsKey(playerUUID) && (currentTime - lastRequestTimes.get(playerUUID) < 600000)) { // 10 minutes
-            return null; // Don't request again for a while
+        // APIキーが設定されていない場合は "?" を返す
+        if (LevelHeadConfig.apiKey == null || LevelHeadConfig.apiKey.isEmpty()) {
+            levelCache.put(playerUUID, "?");
+            return "?";
         }
 
-        levelCache.put(player.getUniqueID(), "..."); // Placeholder
-        lastRequestTimes.put(playerUUID, currentTime);
-        LevelHeadMod.logger.info("Requesting Bedwars level for " + player.getName());
+        long currentTime = System.currentTimeMillis();
+        if (lastRequestTimes.containsKey(playerUUID) && (currentTime - lastRequestTimes.get(playerUUID) < 600000)) {
+            // リクエスト間隔が短い場合はキャッシュの値を返す（存在しない場合は "?"）
+            return levelCache.getOrDefault(playerUUID, "?");
+        }
 
-        HypixelAPI.getPlayerData(player.getUniqueID()).thenAccept(data -> {
+        // ローディング中の表示
+        levelCache.put(playerUUID, "...");
+        lastRequestTimes.put(playerUUID, currentTime);
+        LevelHeadMod.logger.info("Requesting Bedwars level for " + player.getName() + " (UUID: " + playerUUID + ")");
+
+        HypixelAPI.getPlayerData(playerUUID).thenAccept(data -> {
             if (data != null) {
                 int level = data.getBedwarsLevel();
+                LevelHeadMod.logger.info("Received level " + level + " for " + player.getName());
                 if (level > 0) {
                     String formattedLevel;
                     if (LevelHeadConfig.prestigeFormat) {
@@ -121,15 +138,27 @@ public class RenderHandler {
                     } else {
                         formattedLevel = String.valueOf(level);
                     }
-                    levelCache.put(player.getUniqueID(), formattedLevel);
+                    levelCache.put(playerUUID, formattedLevel);
                 } else {
-                    levelCache.put(player.getUniqueID(), EnumChatFormatting.RED + "N/A");
+                    levelCache.put(playerUUID, "?");
                 }
             } else {
-                levelCache.put(player.getUniqueID(), EnumChatFormatting.RED + "Error");
+                LevelHeadMod.logger.error("Failed to get data for " + player.getName());
+                levelCache.put(playerUUID, "?");
             }
+        }).exceptionally(throwable -> {
+            LevelHeadMod.logger.error("Exception while fetching data for " + player.getName(), throwable);
+            levelCache.put(playerUUID, "?");
+            return null;
         });
 
-        return levelCache.get(player.getUniqueID());
+        return levelCache.get(playerUUID);
+    }
+    
+    // キャッシュをクリアするメソッド
+    public void clearCache() {
+        levelCache.clear();
+        lastRequestTimes.clear();
+        LevelHeadMod.logger.info("Level cache cleared");
     }
 }
