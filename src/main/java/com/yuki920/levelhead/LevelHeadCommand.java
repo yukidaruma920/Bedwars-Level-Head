@@ -43,6 +43,7 @@ public class LevelHeadCommand extends CommandBase {
             case "config":
             case "cfg":
                 LevelHeadMod.logger.info("Opening LevelHead config GUI");
+                sender.addChatMessage(new ChatComponentText(EnumChatFormatting.GREEN + "Opening LevelHead config..."));
                 Minecraft.getMinecraft().addScheduledTask(() -> {
                     Minecraft.getMinecraft().displayGuiScreen(new ConfigGui(null));
                 });
@@ -50,6 +51,7 @@ public class LevelHeadCommand extends CommandBase {
                 
             case "refresh":
             case "reload":
+            case "reflesh": // よくあるタイポに対応
                 LevelHeadMod.logger.info("Refreshing LevelHead cache");
                 RenderHandler renderHandler = LevelHeadMod.getRenderHandler();
                 if (renderHandler != null) {
